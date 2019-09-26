@@ -3,7 +3,7 @@ kovtalex Infra repository
 
 # Сборка образов VM при помощи Packer
 
-Скачиваем архив, распаковываем и перемещаем бинартный файл Packer в /usr/local/bin/
+Скачиваем архив, распаковываем и перемещаем бинарный файл Packer в /usr/local/bin/
 ```
 https://www.packer.io/downloads.html
 packer -v 
