@@ -1,6 +1,95 @@
 # kovtalex_infra
 kovtalex Infra repository
 
+# Сборка образов VM при помощи Packer
+
+Скачиваем архив, распаковываем и перемещаем бинарный файл Packer в /usr/local/bin/
+```
+https://www.packer.io/downloads.html
+packer -v 
+```
+
+Создаем ADC и смотрим Project_id
+```
+gcloud auth application-default login
+gcloud projects list
+```
+
+Создаем Packer шаблон ubuntu16.json
+```
+{
+    "builders": [
+        {
+            "type": "googlecompute",
+            "project_id": "{{user `project_id`}}",
+            "image_name": "reddit-base-{{timestamp}}",
+            "image_family": "reddit-base",
+            "source_image_family": "{{user `source_image_family`}}",
+            "zone": "europe-west1-b",
+            "ssh_username": "appuser",
+            "machine_type": "{{user `machine-type`}}",
+            "disk_type": "{{user `disk_type`}}",
+            "disk_size": "{{user `disk_size`}}",
+            "image_description": "{{user `image_description`}}",
+            "network": "{{user `network`}}",
+            "tags": "{{user `tags`}}"
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "scripts/install_ruby.sh",
+            "execute_command": "sudo {{.Path}}"
+        },
+        {
+            "type": "shell",
+            "script": "scripts/install_mongodb.sh",
+            "execute_command": "sudo {{.Path}}"
+        }
+    ]
+}
+```
+
+Создаем файл с пользовательскими переменными variables.json
+```
+{
+  "project_id": "",
+  "source_image_family": "",
+  "machine_type": "f1-micro",
+  "disk_type": "pd-standard",
+  "disk_size": "10",
+  "image_description": "",
+  "tags": "puma-server",
+  "network": "default"
+}
+```
+
+Проверка шаблона на ошибки
+```
+packer validate -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
+```
+
+Построение образа reddit-base
+```
+packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
+```
+
+Построение образа reddit-full
+```
+packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./immutable.json
+```
+
+Запуск вируальной машины из образа reddit-full
+```
+gcloud compute instances create reddit-app \
+--boot-disk-size=10GB \
+--machine-type=g1-small \
+--tags=puma-server \
+--image=reddit-full \
+--restart-on-failure
+```
+
+
 # Деплой тестового приложения в GCP
 
 Устанавливаем Google Cloud SDK и проверяем:
@@ -31,7 +120,6 @@ sudo systemctl enable mongod
 #!/bin/bash
 git clone -b monolith https://github.com/express42/reddit.git
 cd reddit && bundle install
-bundle install
 puma -d
 ```
 
@@ -48,7 +136,6 @@ sudo systemctl start mongod
 sudo systemctl enable mongod
 git clone -b monolith https://github.com/express42/reddit.git
 cd reddit && bundle install
-bundle install
 puma -d
 ```
 

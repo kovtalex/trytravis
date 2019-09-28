@@ -1,0 +1,10 @@
+{
+  "project_id": "infra_755705",
+  "source_image_family": "ubuntu-1604-lts",
+  "machine_type": "f1-micro",
+  "disk_type": "pd-standard",
+  "disk_size": "15",
+  "image_description": "App Image",
+  "tags": "puma-server",
+  "network": "default"
+}
