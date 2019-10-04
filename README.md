@@ -1,6 +1,58 @@
 # kovtalex_infra
 kovtalex Infra repository
 
+# Практика IaC с использованием Terraform
+
+Скачиваем архив, распаковываем и перемещаем бинарный файл Terraform в /usr/local/bin/
+```
+https://www.terraform.io/downloads.html
+terraform -v
+```
+
+Создаем .gitignore со следующим содержимым:
+```
+*.tfstate
+*.tfstate.*.backup
+*.tfstate.backup
+*.tfvars
+.terraform/
+```
+
+Комманды Terraform:
+```
+terraform plan - просмотр будущих изменений относительно текущего состояния ресурсов
+terraform apply - применение изменений (-auto-approve без подтверждений)
+terraform show | grep nat_ip - просмотр атрибутов, к примеру ip
+terraform output - просмотр выходных переменных
+terraform taint - пометка ресурса для пересоздания
+terraform fmt - форматирование конфигурационных файлов
+```
+
+Конфигурационные файлы проекта:
+```
+main.tf - основной файл конфигурации
+lb.tf - описание балансировщика
+variables.tf - определение входных переменных
+terraform.tfvars - входные переменные
+outputs.tf - определение выходных переменных
+```
+
+Задание со *:
+ - Добавление ssh ключа пользователя appuser1 в метаданные проекта:
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)}"
+ ```
+ - Добавление ssh ключа пользователей appuser1 и appuser2 в метаданные проекта:
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)} appuser2:${file(var.public_key_path)}"
+ ```
+ - При попытке добавить ssh ключ пользователя appuser_web через веб интерфейс в метаданные проекта и выполнить terraform apply происходит удаление данного ssh ключа
+ - Конфигурация балансировщика приведена в файле lb.tf
+ - Добавлена конфигурация нового инстанса reddit-app2 к балансировщику. При остановке сервиса на одном из инстансов, приложение продолжает быть доступным для конечных пользователей
+ - При добавлении нового инстанса необходимо полностью копировать код, что нерационально + нет общей базы у приложений на инстансах
+ - Избавится от этого процесса позволит использование переменной count, указав ее значение равным 2
+
+
 # Сборка образов VM при помощи Packer
 
 Скачиваем архив, распаковываем и перемещаем бинарный файл Packer в /usr/local/bin/
@@ -9,13 +61,13 @@ https://www.packer.io/downloads.html
 packer -v 
 ```
 
-Создаем ADC и смотрим Project_id
+Создаем ADC и смотрим Project_id:
 ```
 gcloud auth application-default login
 gcloud projects list
 ```
 
-Создаем Packer шаблон ubuntu16.json
+Создаем Packer шаблон ubuntu16.json:
 ```
 {
     "builders": [
@@ -50,7 +102,7 @@ gcloud projects list
 }
 ```
 
-Создаем файл с пользовательскими переменными variables.json
+Создаем файл с пользовательскими переменными variables.json:
 ```
 {
   "project_id": "",
@@ -64,22 +116,22 @@ gcloud projects list
 }
 ```
 
-Проверка шаблона на ошибки
+Проверка шаблона на ошибки:
 ```
 packer validate -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
 ```
 
-Построение образа reddit-base
+Построение образа reddit-base:
 ```
 packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
 ```
 
-Построение образа reddit-full
+Построение образа reddit-full:
 ```
 packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./immutable.json
 ```
 
-Запуск вируальной машины из образа reddit-full
+Запуск вируальной машины из образа reddit-full:
 ```
 gcloud compute instances create reddit-app \
 --boot-disk-size=10GB \
@@ -216,7 +268,7 @@ ssh -i ~/.ssh/appuser -tt -A appuser@35.204.134.231 ssh appuser@10.164.0.4
 ```
 
 
-Подключение к someinternalhost по алиасу реализуем с помощью внесения конфигурации в ~/.ssh/config :
+Подключение к someinternalhost по алиасу реализуем с помощью внесения конфигурации в ~/.ssh/config:
 ```
 host someinternalhost
      hostname 10.164.0.4
