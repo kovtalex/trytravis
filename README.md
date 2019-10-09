@@ -1,6 +1,116 @@
 # kovtalex_infra
 kovtalex Infra repository
 
+# Принципы организации инфраструктурного кода и работа над инфраструктурой на примере Terraform
+
+Комманды Terraform:
+```
+terraform import - Импорт существующей инфраструктуры в Terraform (пример: terraform import google_compute_firewall.firewall_ssh default-allow-ssh)
+terraform get - Загрузка модулей (в данном случает из локальной папки)
+```
+
+Выносим БД на отдельный инстанс (c помощью Packer создаем шаблоны VM db.json и app.json на основе шаблона ubuntu16.json)
+
+
+Создаем инфраструктуру для двух окружений (stage и prod) используя модули:
+```
+stage - SSH доступ для всех IP адресов
+prod - SSH доступ только с IP пользователя
+```
+
+Пример инфраструктуры stage (main.tf):
+```
+provider "google" {
+  version = "~>2.15"
+  project = var.project
+  region  = var.region
+}
+module "app" {
+  source           = "../modules/app"
+  name             = "reddit-app"
+  machine_type     = "g1-small"
+  zone             = var.zone
+  tags             = ["reddit-app"]
+  public_key_path  = var.public_key_path
+  private_key_path = var.private_key_path
+  app_disk_image   = var.app_disk_image
+  db_internal_ip   = "${module.db.db_internal_ip}"
+}
+module "db" {
+  source           = "../modules/db"
+  name             = "reddit-db"
+  machine_type     = "g1-small"
+  zone             = var.zone
+  tags             = ["reddit-db"]
+  public_key_path  = var.public_key_path
+  private_key_path = var.private_key_path
+  db_disk_image    = var.db_disk_image
+}
+module "vpc" {
+  source        = "../modules/vpc"
+  source_ranges = ["0.0.0.0/0"]
+}
+```
+
+Модули:
+```
+/modules/app - приложение
+/modules/db - база данных
+/modules/vpc - firewall для ssh
+```
+
+Создаем Storage Bucket (storage-bucket.tf):
+```
+provider "google" {
+  version = "~> 2.15"
+  project = var.project
+  region  = var.region
+}
+
+module "storage-bucket" {
+  source  = "SweetOps/storage-bucket/google"
+  version = "0.3.0"
+  location = var.region
+
+  name = "storage-bucket-kovtalex"
+}
+
+output storage-bucket_url {
+  value = module.storage-bucket.url
+}
+```
+
+*Выносим хранение стейт файла в удаленный бекенд на примере окружения stage (/stage/backend.tf):
+```
+terraform {
+  backend "gcs" {
+    bucket = "storage-bucket-kovtalex"
+    prefix = "state"
+  }
+}
+```
+
+ - *Переносим конфигурационные файлы Terraform вне репозитория и проверяем, что Terraform видит текущее состояние используя хранилище storage bucket
+ - *Проверяет работу блокировок при единовременной применении конфигураций
+ - **Добавляем provisioner для деплоя приложения в модуль /module/app и передачи значения в переменную DATABASE_URL для успешного подключения нашего приложения к БД:
+```
+  provisioner "file" {
+    source      = "../modules/app/files/puma.service"
+    destination = "/tmp/puma.service"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo export DATABASE_URL=\"${var.db_internal_ip}\" >> ~/.profile"
+    ]
+  }
+
+  provisioner "remote-exec" {
+    script = "../modules/app/files/deploy.sh"
+  }
+```
+
+
 # Практика IaC с использованием Terraform
 
 Скачиваем архив, распаковываем и перемещаем бинарный файл Terraform в /usr/local/bin/
