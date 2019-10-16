@@ -29,7 +29,7 @@ terraform apply
 Пишем файл конфигурации ansible.cfg:
 ```
 [defaults]
-inventory = ./json.sh
+inventory = ./inventory
 remote_user = appuser
 private_key_file = ~/.ssh/appuser
 host_key_checking = False
@@ -135,7 +135,7 @@ ansible-playbook clone.yml
 После выполнения будут изменения, т.к. мы удалили ~/reddit и клонировали репозиторий по новому
 ```
 
-Для задания со * пишем для начала статический inventory.json:
+Для задания со * готовим inventory.json:
 ```
 {
     "app": {
@@ -153,15 +153,17 @@ https://medium.com/@Nklya/%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81
 ```
 
 Для работы динамического inventory:
- - пишем скрипт json.sh, который получает состояние инфраструктуры и выполняет python скрипт для получения ip хостов из output переменных terraform:
+ - пишем скрипт inventory.sh, который получает состояние инфраструктуры и выполняет python скрипт для получения ip хостов из output переменных terraform:
 ```
 #!/bin/bash
 cd ../terraform/stage
-terraform state pull | python ../../ansible/jsons.py
+terraform state pull | python ../../ansible/inventory.py
 cd ../../ansible
 ```
 - пишет jsons.py скрипт:
 ```
+#!/usr/bin/env python
+
 import json
 import sys
 
