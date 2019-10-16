@@ -15,7 +15,7 @@ requirements.txt:
 ansible>=2.4
 ```
 
-Устанавлием ansible
+Устанавлием ansible:
 ```
 pip install -r requirements.txt
 ansible --version
@@ -61,7 +61,7 @@ ansible dbserver -m command -a uptime
 
 ```
 
-Простой плейбук inventory.yml
+Простой плейбук inventory.yml:
 ```
 app:
   hosts:
@@ -74,7 +74,7 @@ db:
       ansible_host: 34.77.107.107
 ```
 
-Использование YAML inventory
+Использование YAML inventory:
 ```
 Ключ -i переопределяет путь к инвентори файлу
 ansible all -m ping -i inventory.yml
@@ -160,7 +160,7 @@ cd ../terraform/stage
 terraform state pull | python ../../ansible/inventory.py
 cd ../../ansible
 ```
-- пишет jsons.py скрипт:
+- пишет inventory.py скрипт:
 ```
 #!/usr/bin/env python
 
@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
   sys.stdout.write(out_str)
 ```
-- в ansible.cfg меняем значение для inventory на ./json.sh:
+- в ansible.cfg меняем значение для inventory на ./inventory.sh:
 
 Результатом выполнения команды ansible all -m ping будет:
 ```
