@@ -1,7 +1,4 @@
 #!/bin/bash
-rm -f terraform.status
 cd ../terraform/stage
-terraform state pull > ../../ansible/terraform.status
+terraform state pull | python ../../ansible/jsons.py
 cd ../../ansible
-python  jsons.py
-rm -f terraform.status

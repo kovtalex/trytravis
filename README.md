@@ -157,7 +157,7 @@ https://medium.com/@Nklya/%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81
 ```
 #!/bin/bash
 cd ../terraform/stage
-terraform state pull | python  jsons.py
+terraform state pull | python ../../ansible/jsons.py
 cd ../../ansible
 ```
 - пишет jsons.py скрипт:
@@ -166,13 +166,18 @@ import json
 import sys
 
 if __name__ == '__main__':
-        data = sys.stdin.read()
-        f = json.loads(data)
-        app = f["outputs"]["app_external_ip"]["value"]
-        db = f["outputs"]["db_external_ip"]["value"]
-        out = {'app': {'hosts': [str(app)]},
-                'db': {'hosts': [str(db)]}}
-        sys.stdout.write(json.dumps(out))
+  out_str = ""
+  try:
+    data = sys.stdin.read()
+    f = json.loads(data)
+    app = f["outputs"]["app_external_ip"]["value"]
+    db = f["outputs"]["db_external_ip"]["value"]
+    out = {'app': {'hosts': [str(app)]},'db': {'hosts': [str(db)]}}
+    out_str = json.dumps(out)
+  except:
+    pass
+
+  sys.stdout.write(out_str)
 ```
 - в ansible.cfg меняем значение для inventory на ./json.sh:
 
@@ -193,6 +198,15 @@ if __name__ == '__main__':
     "ping": "pong"
 }
 ```
+
+Динамическое инвентори позволяет формировать список хостов для Ansible динамически c применением скриптов.
+Динамическое инвентори представляет собой простой исполняемый скрипт (+x), который при запуске с параметром --list возвращает список хостов в формате JSON.
+Его необходимо указывать при выполнении Ansible с помощью опции -i/--inventory, либо в конфигурационном файле ansible.cfg.
+Сам скрипт может быть написан на любом языке (bash, python, ruby, etc.)
+Когда инвентори скрипт запущен с параметром --list, он возвращает JSON с данными о хостах и группах, которые он получил.
+Помимо имен групп, хостов и IP адресов там могут быть различные переменные и другие данные.
+При запуске скрипта с параметром --host <hostname> (где <hostname> это один из хостов), скрипт должен вернуть JSON с переменными для этого хоста.
+Также можно использовать элемент _meta, в котором перечислены все переменные для хостов.
 
 
 # Принципы организации инфраструктурного кода и работа над инфраструктурой на примере Terraform
