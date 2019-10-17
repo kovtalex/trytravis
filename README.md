@@ -1,6 +1,216 @@
 # kovtalex_infra
 kovtalex Infra repository
 
+# Знакомство с Ansible
+
+Проверяем установку Python 2.7 и устанавливаем pip:
+```
+python --version
+wget https://bootstrap.pypa.io/get-pip.py
+python2.7 get-pip.py
+```
+
+requirements.txt:
+```
+ansible>=2.4
+```
+
+Устанавлием ansible:
+```
+pip install -r requirements.txt
+ansible --version
+```
+
+Поднимаем инфраструктуру окружения stage и проверяем SSH достук к ней:
+```
+terraform apply
+```
+
+Пишем файл конфигурации ansible.cfg:
+```
+[defaults]
+inventory = ./inventory
+remote_user = appuser
+private_key_file = ~/.ssh/appuser
+host_key_checking = False
+retry_files_enabled = False
+```
+
+Файл inventory:
+```
+[app]
+appserver ansible_host=34.76.137.86
+
+[db]
+dbserver ansible_host=34.77.107.107
+```
+
+Используем команду ansible для вызова модуля ping:
+```
+ansible appserver -i ./inventory -m ping
+-m ping - вызываемый модуль
+-i ./inventory - путь до файла инвентори
+appserver - имя хоста или имя группы, которое указан в инвентори, откуда Ansible yзнает, как подключаться к хосту
+```
+
+Используем модуль command, который позволяет запускать произвольные команды на удаленном хосте:
+```
+ansible dbserver -m command -a uptime
+
+Модуль command выполняет команды, не используя оболочку (sh, bash), поэтому в нем не работают перенаправления потоков и нет доступа к некоторым переменным окружения.
+
+```
+
+Простой плейбук inventory.yml:
+```
+app:
+  hosts:
+    appserver:
+      ansible_host: 34.76.137.86
+
+db:
+  hosts:
+    dbserver:
+      ansible_host: 34.77.107.107
+```
+
+Использование YAML inventory:
+```
+Ключ -i переопределяет путь к инвентори файлу
+ansible all -m ping -i inventory.yml
+```
+
+Используем модуль shell, который позволяет запускать произвольные команды на удаленном хосте:
+```
+ansible app -m shell -a 'ruby -v; bundler -v'
+```
+
+Используем модуль command для проверки статуса сервиса MongoDB:
+```
+Эта операция аналогична запуску на хосте команды systemctl status mongod
+ansible db -m command -a 'systemctl status mongod'
+```
+
+Используем модуль systemd, который предназначен для управления сервисами:
+```
+ansible db -m systemd -a name=mongod
+```
+
+Используем модуль git для клонирования репозитория с приложением на app сервер:
+```
+ansible app -m git -a \
+'repo=https://github.com/express42/reddit.git dest=/home/appuser/reddit
+повторное выполнение этой команды проходит успешно, только переменная changed будет false (что значит, что изменения не произошли)
+```
+
+Тоже самое с модулем command:
+```
+в этом примере, повторное выполнение завершается ошибкой
+ansible app -m command -a \
+'git clone https://github.com/express42/reddit.git /home/appuser/reddit'
+```
+
+Создадим плейбук clone.yml:
+```
+---
+- name: Clone
+  hosts: app
+  tasks:
+    - name: Clone repo
+      git:
+        repo: https://github.com/express42/reddit.git
+        dest: /home/appuser/reddit
+```
+
+И выполним его:
+```
+ansible-playbook clone.yml
+Изменения не произошли так как репозиторий уже клонирован
+```
+
+Теперь выполним:
+```
+ansible app -m command -a 'rm -rf ~/reddit'
+ansible-playbook clone.yml
+После выполнения будут изменения, т.к. мы удалили ~/reddit и клонировали репозиторий по новому
+```
+
+Для задания со * готовим inventory.json:
+```
+{
+    "app": {
+        "hosts": ["34.76.137.86"]
+    },
+    "db": {
+        "hosts": ["34.77.107.107"]
+    }
+}
+```
+
+Описание динамического inventory доступно по ссылке:
+```
+https://medium.com/@Nklya/%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%BE%D0%B5-%D0%B8%D0%BD%D0%B2%D0%B5%D0%BD%D1%82%D0%BE%D1%80%D0%B8-%D0%B2-ansible-9ee880d540d6
+```
+
+Для работы динамического inventory:
+ - пишем скрипт inventory.sh, который получает состояние инфраструктуры и выполняет python скрипт для получения ip хостов из output переменных terraform:
+```
+#!/bin/bash
+cd ../terraform/stage
+terraform state pull | python ../../ansible/inventory.py
+cd ../../ansible
+```
+- пишет inventory.py скрипт:
+```
+#!/usr/bin/env python
+
+import json
+import sys
+
+if __name__ == '__main__':
+  out_str = ""
+  try:
+    data = sys.stdin.read()
+    f = json.loads(data)
+    app = f["outputs"]["app_external_ip"]["value"]
+    db = f["outputs"]["db_external_ip"]["value"]
+    out = {'app': {'hosts': [str(app)]},'db': {'hosts': [str(db)]}}
+    out_str = json.dumps(out)
+  except:
+    pass
+
+  sys.stdout.write(out_str)
+```
+- в ansible.cfg меняем значение для inventory на ./inventory.sh:
+
+Результатом выполнения команды ansible all -m ping будет:
+```
+34.76.137.86 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+34.77.107.107 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+Динамическое инвентори позволяет формировать список хостов для Ansible динамически c применением скриптов.
+Динамическое инвентори представляет собой простой исполняемый скрипт (+x), который при запуске с параметром --list возвращает список хостов в формате JSON.
+Его необходимо указывать при выполнении Ansible с помощью опции -i/--inventory, либо в конфигурационном файле ansible.cfg.
+Сам скрипт может быть написан на любом языке (bash, python, ruby, etc.)
+Когда инвентори скрипт запущен с параметром --list, он возвращает JSON с данными о хостах и группах, которые он получил.
+Помимо имен групп, хостов и IP адресов там могут быть различные переменные и другие данные.
+При запуске скрипта с параметром --host <hostname> (где <hostname> это один из хостов), скрипт должен вернуть JSON с переменными для этого хоста.
+Также можно использовать элемент _meta, в котором перечислены все переменные для хостов.
+
+
 # Принципы организации инфраструктурного кода и работа над инфраструктурой на примере Terraform
 
 Комманды Terraform:
