@@ -6,7 +6,8 @@ kovtalex Infra repository
 
 Чтобы не запушить в репу временные файлы Ansible, добавим в файл .gitignore следующую строку:
 
-```*.retry
+```
+*.retry
 ```
 
 Создадим плейбук для управления конфигурацией и деплоя нашего приложения.
@@ -16,7 +17,8 @@ kovtalex Infra repository
 
 reddit_app_one_play.yml:
 
-```---
+```
+---
 - name: Configure hosts & deploy application # <-- Словесное описание сценария (name)
   hosts: all # <-- Для каких хостов будут выполняться описанные ниже таски (hosts)
   vars:
@@ -81,7 +83,8 @@ reddit_app_one_play.yml:
 
 Шаблон конфига MongoDB:
 
-```# Where and how to store data.
+```
+# Where and how to store data.
 storage:
   dbPath: /var/lib/mongodb
   journal:
@@ -102,12 +105,14 @@ net:
 Шаблон для приложения.
 Данный шаблон содержит присвоение переменной DATABASE_URL значения, которое мы передаем через Ansible переменную db_host:
 
-```DATABASE_URL={{ db_host }}
+```
+DATABASE_URL={{ db_host }}
 ```
 
 Опции Ansible:
 
-```--check- позволяет произвести "пробный прогон" плейбука
+```
+--check- позволяет произвести "пробный прогон" плейбука
 --limit - ограничиваем группу хостов, для которых применить плейбук
 ```
 
@@ -119,7 +124,8 @@ Handlers похожи на таски, однако запускаются то�
 
 Проверка плейбука:
 
-```ansible-playbook reddit_app_one_play.yml --check --limit db --tags db-tag
+```
+ansible-playbook reddit_app_one_play.yml --check --limit db --tags db-tag
 ansible-playbook reddit_app_one_play.yml --check --limit app --tags app-tag
 ansible-playbook reddit_app_one_play.yml --check --limit app --tags deploy-tag
 ```
@@ -127,7 +133,8 @@ ansible-playbook reddit_app_one_play.yml --check --limit app --tags deploy-tag
 Один плейбук, несколько сценариев
 reddit_app_multiple_plays.yml:
 
-```---
+```
+---
 - name: Configure MongoDB
   hosts: db
   tags: db-tag
@@ -201,7 +208,8 @@ reddit_app_multiple_plays.yml:
 
 app.yml:
 
-```---
+```
+---
 - name: Configure Puma
   hosts: app
   become: true
@@ -231,7 +239,8 @@ app.yml:
 
 db.yml:
 
-```---
+```
+---
 - name: Configure MongoDB
   hosts: db
   become: true
@@ -252,7 +261,8 @@ db.yml:
 
 deploy.yml:
 
-```---
+```
+---
 - name: Deploy App
   hosts: app
   tasks:
@@ -279,7 +289,8 @@ deploy.yml:
 
 site.yml:
 
-```---
+```
+---
 - import_playbook: db.yml
 - import_playbook: app.yml
 - import_playbook: deploy.yml
@@ -287,7 +298,8 @@ site.yml:
 
 Проверка и выполнение:
 
-```ansible-playbook site.yml --check
+```
+ansible-playbook site.yml --check
 ansible-playbook site.yml
 ```
 
@@ -296,7 +308,8 @@ ansible-playbook site.yml
 
 packer_app.yml:
 
-```---
+```
+---
 - name: Install Ruby && Bundler
   hosts: all
   become: true
@@ -311,7 +324,8 @@ packer_app.yml:
 
 packer_db.yml:
 
-```---
+```
+---
 - name: Install MongoDB 3.2
   hosts: all
   become: true
@@ -343,7 +357,8 @@ packer_db.yml:
 
 Заменим секцию Provision в образе packer/app.json на Ansible:
 
-```"provisioners": [
+```
+"provisioners": [
   {  
     "type": "ansible",
     "playbook_file": "ansible/packer_app.yml"
@@ -353,7 +368,8 @@ packer_db.yml:
 
 Такие же изменения выполним и для packer/db.json:
 
-```"provisioners": [
+```
+"provisioners": [
   {
     "type": "ansible",
     "playbook_file": "ansible/packer_db.yml"
@@ -369,13 +385,15 @@ packer_db.yml:
 
 Генерируем json service account key
 
-```gcloud iam service-accounts keys create ~/key.json \
+```
+gcloud iam service-accounts keys create ~/key.json \
    --iam-account [SA-NAME]@[PROJECT-ID].iam.gserviceaccount.com
 ```
 
 Пример inventory.gcp.yml:
 
-```---
+```
+---
 plugin: gcp_compute  
 projects:
   - infra-253207 # id gcp проекта
@@ -396,7 +414,8 @@ service_account_file: /root/key.json # Service account json keyfile
 
 Просмотр дерева хостов: ansible-inventory -i inventory.gcp.yml --graph
 
-```@all:
+```
+@all:
   |--@app:
   |  |--reddit-app
   |--@db:
@@ -408,13 +427,15 @@ service_account_file: /root/key.json # Service account json keyfile
 
 Применение динамического инвентори по умолчанию (ansible.cfg):
 
-```[defaults]
+```
+[defaults]
 inventory = ./inventory.gcp.yml
 ```
 
 Выполнение: ansible -i inventory.gcp.yml all -m ping
 
-```reddit-app | SUCCESS => {
+```
+reddit-app | SUCCESS => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
     },
@@ -432,7 +453,8 @@ reddit-db | SUCCESS => {
 
 Пример применения динамического инвентори в плейбуке:
 
-```---
+```
+---
 - name: Configure Puma
   hosts: app
   become: true
@@ -464,30 +486,35 @@ reddit-db | SUCCESS => {
 
 Проверяем установку Python 2.7 и устанавливаем pip:
 
-```python --version
+```
+python --version
 wget https://bootstrap.pypa.io/get-pip.py
 python2.7 get-pip.py
 ```
 
 requirements.txt:
 
-```ansible>=2.4
+```
+ansible>=2.4
 ```
 
 Устанавлием ansible:
 
-```pip install -r requirements.txt
+```
+pip install -r requirements.txt
 ansible --version
 ```
 
 Поднимаем инфраструктуру окружения stage и проверяем SSH достук к ней:
 
-```terraform apply
+```
+terraform apply
 ```
 
 Пишем файл конфигурации ansible.cfg:
 
-```[defaults]
+```
+[defaults]
 inventory = ./inventory
 remote_user = appuser
 private_key_file = ~/.ssh/appuser
@@ -497,7 +524,8 @@ retry_files_enabled = False
 
 Файл inventory:
 
-```[app]
+```
+[app]
 appserver ansible_host=34.76.137.86
 
 [db]
@@ -506,7 +534,8 @@ dbserver ansible_host=34.77.107.107
 
 Используем команду ansible для вызова модуля ping:
 
-```ansible appserver -i ./inventory -m ping
+```
+ansible appserver -i ./inventory -m ping
 -m ping - вызываемый модуль
 -i ./inventory - путь до файла инвентори
 appserver - имя хоста или имя группы, которое указан в инвентори, откуда Ansible yзнает, как подключаться к хосту
@@ -514,14 +543,16 @@ appserver - имя хоста или имя группы, которое ука�
 
 Используем модуль command, который позволяет запускать произвольные команды на удаленном хосте:
 
-```ansible dbserver -m command -a uptime
+```
+ansible dbserver -m command -a uptime
 
 Модуль command выполняет команды, не используя оболочку (sh, bash), поэтому в нем не работают перенаправления потоков и нет доступа к некоторым переменным окружения.
 ```
 
 Простой плейбук inventory.yml:
 
-```app:
+```
+app:
   hosts:
     appserver:
       ansible_host: 34.76.137.86
@@ -534,43 +565,50 @@ db:
 
 Использование YAML inventory:
 
-```Ключ -i переопределяет путь к инвентори файлу
+```
+Ключ -i переопределяет путь к инвентори файлу
 ansible all -m ping -i inventory.yml
 ```
 
 Используем модуль shell, который позволяет запускать произвольные команды на удаленном хосте:
 
-```ansible app -m shell -a 'ruby -v; bundler -v'
+```
+ansible app -m shell -a 'ruby -v; bundler -v'
 ```
 
 Используем модуль command для проверки статуса сервиса MongoDB:
 
-```Эта операция аналогична запуску на хосте команды systemctl status mongod
+```
+Эта операция аналогична запуску на хосте команды systemctl status mongod
 ansible db -m command -a 'systemctl status mongod'
 ```
 
 Используем модуль systemd, который предназначен для управления сервисами:
 
-```ansible db -m systemd -a name=mongod
+```
+ansible db -m systemd -a name=mongod
 ```
 
 Используем модуль git для клонирования репозитория с приложением на app сервер:
 
-```ansible app -m git -a \
+```
+ansible app -m git -a \
 'repo=https://github.com/express42/reddit.git dest=/home/appuser/reddit
 повторное выполнение этой команды проходит успешно, только переменная changed будет false (что значит, что изменения не произошли)
 ```
 
 Тоже самое с модулем command:
 
-```в этом примере, повторное выполнение завершается ошибкой
+```
+в этом примере, повторное выполнение завершается ошибкой
 ansible app -m command -a \
 'git clone https://github.com/express42/reddit.git /home/appuser/reddit'
 ```
 
 Создадим плейбук clone.yml:
 
-```---
+```
+---
 - name: Clone
   hosts: app
   tasks:
@@ -582,20 +620,23 @@ ansible app -m command -a \
 
 И выполним его:
 
-```ansible-playbook clone.yml
+```
+ansible-playbook clone.yml
 Изменения не произошли так как репозиторий уже клонирован
 ```
 
 Теперь выполним:
 
-```ansible app -m command -a 'rm -rf ~/reddit'
+```
+ansible app -m command -a 'rm -rf ~/reddit'
 ansible-playbook clone.yml
 После выполнения будут изменения, т.к. мы удалили ~/reddit и клонировали репозиторий по новому
 ```
 
 Для задания со * готовим inventory.json:
 
-```{
+```
+{
     "app": {
         "hosts": ["34.76.137.86"]
     },
@@ -607,14 +648,16 @@ ansible-playbook clone.yml
 
 Описание динамического inventory доступно по ссылке:
 
-```https://medium.com/@Nklya/%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%BE%D0%B5-%D0%B8%D0%BD%D0%B2%D0%B5%D0%BD%D1%82%D0%BE%D1%80%D0%B8-%D0%B2-ansible-9ee880d540d6
+```
+https://medium.com/@Nklya/%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%BE%D0%B5-%D0%B8%D0%BD%D0%B2%D0%B5%D0%BD%D1%82%D0%BE%D1%80%D0%B8-%D0%B2-ansible-9ee880d540d6
 ```
 
 Для работы динамического inventory:
 
 - пишем скрипт inventory.sh, который получает состояние инфраструктуры и выполняет python скрипт для получения ip хостов из output переменных terraform:
 
-```#!/bin/bash
+```
+#!/bin/bash
 cd ../terraform/stage
 terraform state pull | python ../../ansible/inventory.py
 cd ../../ansible
@@ -622,7 +665,8 @@ cd ../../ansible
 
 - пишет inventory.py скрипт:
   
-```#!/usr/bin/env python
+```
+#!/usr/bin/env python
 
 import json
 import sys
@@ -646,7 +690,8 @@ if __name__ == '__main__':
 
 Результатом выполнения команды ansible all -m ping будет:
 
-```34.76.137.86 | SUCCESS => {
+```
+34.76.137.86 | SUCCESS => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
     },
@@ -675,7 +720,8 @@ if __name__ == '__main__':
 
 Комманды Terraform:
 
-```terraform import - Импорт существующей инфраструктуры в Terraform (пример: terraform import google_compute_firewall.firewall_ssh default-allow-ssh)
+```
+terraform import - Импорт существующей инфраструктуры в Terraform (пример: terraform import google_compute_firewall.firewall_ssh default-allow-ssh)
 terraform get - Загрузка модулей (в данном случает из локальной папки)
 ```
 
@@ -683,13 +729,15 @@ terraform get - Загрузка модулей (в данном случает 
 
 Создаем инфраструктуру для двух окружений (stage и prod) используя модули:
 
-```stage - SSH доступ для всех IP адресов
+```
+stage - SSH доступ для всех IP адресов
 prod - SSH доступ только с IP пользователя
 ```
 
 Пример инфраструктуры stage (main.tf):
 
-```provider "google" {
+```
+provider "google" {
   version = "~>2.15"
   project = var.project
   region  = var.region
@@ -723,14 +771,16 @@ module "vpc" {
 
 Модули:
 
-```/modules/app - приложение
+```
+/modules/app - приложение
 /modules/db - база данных
 /modules/vpc - firewall для ssh
 ```
 
 Создаем Storage Bucket (storage-bucket.tf):
 
-```provider "google" {
+```
+provider "google" {
   version = "~> 2.15"
   project = var.project
   region  = var.region
@@ -751,7 +801,8 @@ output storage-bucket_url {
 
 *Выносим хранение стейт файла в удаленный бекенд на примере окружения stage (/stage/backend.tf):
 
-```terraform {
+```
+terraform {
   backend "gcs" {
     bucket = "storage-bucket-kovtalex"
     prefix = "state"
@@ -763,7 +814,8 @@ output storage-bucket_url {
 - *Проверяет работу блокировок при единовременной применении конфигураций
 - **Добавляем provisioner для деплоя приложения в модуль /module/app и передачи значения в переменную DATABASE_URL для успешного подключения нашего приложения к БД:
   
-```provisioner "file" {
+```
+provisioner "file" {
     source      = "../modules/app/files/puma.service"
     destination = "/tmp/puma.service"
   }
@@ -783,13 +835,15 @@ output storage-bucket_url {
 
 Скачиваем архив, распаковываем и перемещаем бинарный файл Terraform в /usr/local/bin/
 
-```https://www.terraform.io/downloads.html
+```
+https://www.terraform.io/downloads.html
 terraform -v
 ```
 
 Создаем .gitignore со следующим содержимым:
 
-```*.tfstate
+```
+*.tfstate
 *.tfstate.*.backup
 *.tfstate.backup
 *.tfvars
@@ -798,7 +852,8 @@ terraform -v
 
 Комманды Terraform:
 
-```terraform plan - просмотр будущих изменений относительно текущего состояния ресурсов
+```
+terraform plan - просмотр будущих изменений относительно текущего состояния ресурсов
 terraform apply - применение изменений (-auto-approve без подтверждений)
 terraform show | grep nat_ip - просмотр атрибутов, к примеру ip
 terraform output - просмотр выходных переменных
@@ -808,7 +863,8 @@ terraform fmt - форматирование конфигурационных ф
 
 Конфигурационные файлы проекта:
 
-```main.tf - основной файл конфигурации
+```
+main.tf - основной файл конфигурации
 lb.tf - описание балансировщика
 variables.tf - определение входных переменных
 terraform.tfvars - входные переменные
@@ -837,19 +893,22 @@ outputs.tf - определение выходных переменных
 
 Скачиваем архив, распаковываем и перемещаем бинарный файл Packer в /usr/local/bin/
 
-```https://www.packer.io/downloads.html
+```
+https://www.packer.io/downloads.html
 packer -v
 ```
 
 Создаем ADC и смотрим Project_id:
 
-```gcloud auth application-default login
+```
+gcloud auth application-default login
 gcloud projects list
 ```
 
 Создаем Packer шаблон ubuntu16.json:
 
-```{
+```
+{
     "builders": [
         {
             "type": "googlecompute",
@@ -884,7 +943,8 @@ gcloud projects list
 
 Создаем файл с пользовательскими переменными variables.json:
 
-```{
+```
+{
   "project_id": "",
   "source_image_family": "",
   "machine_type": "f1-micro",
@@ -898,22 +958,26 @@ gcloud projects list
 
 Проверка шаблона на ошибки:
 
-```packer validate -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
+```
+packer validate -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
 ```
 
 Построение образа reddit-base:
 
-```packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
+```
+packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./ubuntu16.json
 ```
 
 Построение образа reddit-full:
 
-```packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./immutable.json
+```
+packer build -var-file=./variables.json -var 'project_id=infra-253207' -var 'source_image_family=ubuntu-1604-lts' ./immutable.json
 ```
 
 Запуск вируальной машины из образа reddit-full:
 
-```gcloud compute instances create reddit-app \
+```
+gcloud compute instances create reddit-app \
 --boot-disk-size=10GB \
 --machine-type=g1-small \
 --tags=puma-server \
@@ -925,19 +989,22 @@ gcloud projects list
 
 Устанавливаем Google Cloud SDK и проверяем:
 
-```gcloud auth list
+```
+gcloud auth list
 ```
 
 Создаем скрипт установки Ruby и Bundler (install_ruby.sh):
 
-```#!/bin/bash
+```
+#!/bin/bash
 sudo apt update
 sudo apt install -y ruby-full ruby-bundler build-essential
 ```
 
 Создаем скрипт установки MongoDB (install_mongodb.sh):
 
-```#!/bin/bash
+```
+#!/bin/bash
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys D68FA50FEA312927
 sudo bash -c 'echo "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse" > /etc/apt/sources.list.d/mongodb-org-3.2.list'
 sudo apt update
@@ -948,7 +1015,8 @@ sudo systemctl enable mongod
 
 Создаем скрипт деплоя приложения (deploy.sh):
 
-```#!/bin/bash
+```
+#!/bin/bash
 git clone -b monolith https://github.com/express42/reddit.git
 cd reddit && bundle install
 puma -d
@@ -956,7 +1024,8 @@ puma -d
 
 Создаем скрипт объединяющий в себе три выше указанных скрипта (startup_script.sh):
 
-```#!/bin/bash
+```
+#!/bin/bash
 sudo apt update
 sudo apt install -y ruby-full ruby-bundler build-essential
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys D68FA50FEA312927
@@ -972,7 +1041,8 @@ puma -d
 
 Даем право на выполнение скриптов:
 
-```chmod u+x install_ruby.sh
+```
+chmod u+x install_ruby.sh
 chmod u+x install_mongodb.sh
 chmod u+x deploy.sh
 chmod u+x startup_script.sh
@@ -980,7 +1050,8 @@ chmod u+x startup_script.sh
 
 Создаем новый инстанс через gcloud CLI с заранее подготовленным startup script:
 
-```gcloud compute instances create reddit-app \
+```
+gcloud compute instances create reddit-app \
 --boot-disk-size=10GB \
 --image-family ubuntu-1604-lts \
 --image-project=ubuntu-os-cloud \
@@ -992,7 +1063,8 @@ chmod u+x startup_script.sh
 
 Создаем новый инстанс через gcloud CLI со скриптом загружаемым по URL:
 
-```gcloud compute instances create reddit-app \
+```
+gcloud compute instances create reddit-app \
 --boot-disk-size=10GB \
 --image-family ubuntu-1604-lts \
 --image-project=ubuntu-os-cloud \
@@ -1004,12 +1076,14 @@ chmod u+x startup_script.sh
 
 Создает правило fw через gcloud CLI:
 
-```gcloud compute firewall-rules create default-puma-server --action=ALLOW --rules=tcp:9292 --source-ranges=0.0.0.0/0 --target-tags=puma-server
+```
+gcloud compute firewall-rules create default-puma-server --action=ALLOW --rules=tcp:9292 --source-ranges=0.0.0.0/0 --target-tags=puma-server
 ```
 
 Данные для проверки ДЗ:
 
-```testapp_IP = 35.204.90.255
+```
+testapp_IP = 35.204.90.255
 testapp_port = 9292
 ```
 
@@ -1017,38 +1091,43 @@ testapp_port = 9292
 
 Создаем два микро инстанса:
 
-```bastion с внешним и внутренним интерфейсами
+```
+bastion с внешним и внутренним интерфейсами
 someinternalhost с одним внутренним интерфейсом
 ```
 
 Генерируем пару ключей (для пользователя appuser) и заливаем публичный ключ на GCP:
 
-```ssh-keygen -t rsa -f ~/.ssh/appuser -C appuser -P ""
+```
+ssh-keygen -t rsa -f ~/.ssh/appuser -C appuser -P ""
 ```
 
 Проверяем подключение с локальной машины к bastion:
 
-```ssh -i ~/.ssh/appuser appuser@35.204.134.231
+```
+ssh -i ~/.ssh/appuser appuser@35.204.134.231
 ```
 
 Подключение к someinternalhost с локальной машины реализуем черем SSH Agent Forwarding:
 
-```eval 'ssh-agent -s'
+```
+eval `ssh-agent -s`
 ssh-add -L
 ssh-add ~/.ssh/appuser
 ssh -i ~/.ssh/appuser -A appuser@35.204.134.231
 ssh 10.164.0.4
-
 ```
 
 Подключение к someinternalhost в одну команду:
 
-```ssh -i ~/.ssh/appuser -tt -A appuser@35.204.134.231 ssh appuser@10.164.0.4
+```
+ssh -i ~/.ssh/appuser -tt -A appuser@35.204.134.231 ssh appuser@10.164.0.4
 ```
 
 Подключение к someinternalhost по алиасу реализуем с помощью внесения конфигурации в ~/.ssh/config:
 
-```host someinternalhost
+```
+host someinternalhost
      hostname 10.164.0.4
      user appuser
      ProxyCommand ssh appuser@35.204.134.231 -W %h:%p
@@ -1056,14 +1135,16 @@ ssh 10.164.0.4
 
 Для доступа к частной сети через bastion используем VPN сервер Pritunl:
 
-```Разрешаем http и https трафик на брандмауэре GCP для bastion
+```
+Разрешаем http и https трафик на брандмауэре GCP для bastion
 sudo bash setupvpn.sh
 Настраиваем Pritunl https://35.204.134.231/setup
 ```
 
 После полной настройки Pritunl проверяем работоспособность:
 
-```openvpn --config cloud-bastion.ovpn
+```
+openvpn --config cloud-bastion.ovpn
 ssh -i ~/.ssh/appuser appuser@10.164.0.4
 ```
 
@@ -1071,6 +1152,7 @@ ssh -i ~/.ssh/appuser appuser@10.164.0.4
 
 Данные для проверки VPN:
 
-```bastion_IP = 35.204.134.231
+```
+bastion_IP = 35.204.134.231
 someinternalhost_IP = 10.164.0.4
 ```
