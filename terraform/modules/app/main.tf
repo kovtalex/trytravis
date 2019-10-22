@@ -18,29 +18,29 @@ resource "google_compute_instance" "app" {
     }
   }
 
-  connection {
-    type  = "ssh"
-    host  = self.network_interface[0].access_config[0].nat_ip
-    user  = "appuser"
-    agent = false
-    private_key = file(var.private_key_path)
-  }
+#  connection {
+#    type  = "ssh"
+#    host  = self.network_interface[0].access_config[0].nat_ip
+#    user  = "appuser"
+#    agent = false
+#    private_key = file(var.private_key_path)
+#  }
 
-  provisioner "file" {
-    source      = "../modules/app/files/puma.service"
-    destination = "/tmp/puma.service"
-  }
+#  provisioner "file" {
+#    source      = "../modules/app/files/puma.service"
+#    destination = "/tmp/puma.service"
+#  }
 
-  provisioner "remote-exec" {
-    inline = [
-      "echo export DATABASE_URL=\"${var.db_internal_ip}\" >> ~/.profile"
-    ]
-  }	
+#  provisioner "remote-exec" {
+#    inline = [
+#      "echo export DATABASE_URL=\"${var.db_internal_ip}\" >> ~/.profile"
+#    ]
+#  }	
 
-  provisioner "remote-exec" {
-    script = "../modules/app/files/deploy.sh"
-  }
-depends_on = [var.db_internal_ip]
+#  provisioner "remote-exec" {
+#    script = "../modules/app/files/deploy.sh"
+#  }
+#depends_on = [var.db_internal_ip]
 }
 
 resource "google_compute_address" "app_ip" {
