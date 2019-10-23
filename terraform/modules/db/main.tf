@@ -16,19 +16,19 @@ resource "google_compute_instance" "db" {
     access_config {}
   }
 
-  connection {
-    type  = "ssh"
-    host  = self.network_interface[0].access_config[0].nat_ip
-    user  = "appuser"
-    agent = false
-    private_key = file(var.private_key_path)
-  }
+#  connection {
+#    type  = "ssh"
+#    host  = self.network_interface[0].access_config[0].nat_ip
+#    user  = "appuser"
+#    agent = false
+#    private_key = file(var.private_key_path)
+#  }
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/g' /etc/mongod.conf && sudo service mongod restart"
-    ]
-  }
+#  provisioner "remote-exec" {
+#    inline = [
+#      "sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/g' /etc/mongod.conf && sudo service mongod restart"
+#    ]
+#  }
 }
 
 resource "google_compute_firewall" "firewall_mongo" {
