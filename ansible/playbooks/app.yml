@@ -1,0 +1,7 @@
+---
+- name: Configure Puma
+  hosts: app
+  become: true
+  roles:
+    - { role: app }
+    - { role: jdauphant.nginx }

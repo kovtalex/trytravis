@@ -8,7 +8,7 @@ module "app" {
   name             = "reddit-app"
   machine_type     = "g1-small"
   zone             = var.zone
-  tags             = ["reddit-app"]
+  tags             = ["reddit-app", "http-server"]
   public_key_path  = var.public_key_path
   private_key_path = var.private_key_path
   app_disk_image   = var.app_disk_image
