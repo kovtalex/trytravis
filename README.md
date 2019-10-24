@@ -2,6 +2,127 @@
 
 kovtalex Infra repository
 
+## Ansible: работа с ролями и окружениями
+
+### Переносим созданные плейбуки в раздельные роли
+
+Роли представляют собой основной механизм группировки и переиспользования конфигурационного кода в Ansible. Роли позволяют сгруппировать в единое целое описание конфигурации отдельных сервисов и компонент системы (таски, хендлеры, файлы, шаблоны, переменные). Роли можно затем переиспользовать при настройке окружений, тем самым избежав дублирования кода. Ролями можно также делиться и брать у сообщества (community).
+в Ansible Galaxy.
+
+Ansible Galaxy - это централизованное место, где хранится информация о ролях, созданных сообществом (community roles).
+Ansible имеет специальную команду для работы с Galaxy. Получить справку по этой команде можно на сайте или использовав команду:
+
+```
+ansible-galaxy -h
+```
+Также команда ansible-galaxy init позволяет нам создать структуру роли в соответсвии с принятым на Galaxy форматом.
+
+```
+ansible-galaxy init app
+ansible-galaxy init db
+```
+
+Структура роли:
+
+```
+tree db
+db
+├── README.md
+├── defaults # <-- Директория для переменных по умолчанию
+│ └── main.yml
+├── handlers
+│ └── main.yml
+├── meta # <-- Информация о роли, создателе и зависимостях
+│ └── main.yml
+├── tasks # <-- Директория для тасков
+│ └── main.yml
+├── tests
+│ ├── inventory
+│ └── test.yml
+└── vars # <-- Директория для переменных, которые не должны
+└── main.yml # переопределяться пользователем
+6 directories, 8 files
+```
+
+Определим роли для базы данных, приложения и проведем их проверку:
+
+```
+ansible-playbook playbooks/site.yml --check
+ansible-playbook playbooks/site.yml
+```
+
+### Окружения
+
+Обычно инфраструктура состоит из нескольких окружений. Эти окружения могут иметь небольшие отличия в настройках инфраструктуры и конфигурации управляемых хостов.
+
+В директории ansible/environments создадим две директории для наших окружений stage и prod.
+
+Примеры деплоя из окружения:
+
+```
+ansible-playbook playbooks/site.yml (stage)
+ansible-playbook -i environments/prod/inventory playbooks/site.yml (prod)
+```
+
+### Работа с Community-ролями
+
+Используем роль jdauphant.nginx и настроим обратное проксирование для нашего приложения с помощью nginx.
+
+- Создадим файлы environments/stage/requirements.yml и environments/prod/requirements.yml
+- Добавим в них запись вида:
+  
+  ```
+  - src: jdauphant.nginx
+    version: v2.21.1
+  ```
+
+- Установим роль: ansible-galaxy install -r environments/stage/requirements.yml
+- Добавим в /roles/jdauphant.nginx/tasks/installation.packages.yml (иначе ругается на отсутствие python-get):
+
+```
+   - name: Install Python-apt
+     command: apt install python-apt
+```
+
+- Комьюнити-роли не стоит коммитить в свой репозиторий, для этого добавим в .gitignore запись: jdauphant.nginx
+- Добавим переменные в stage/group_vars/app и prod/group_vars/app:
+  
+  ```
+  nginx_sites:
+  default:
+   - listen 80
+   - server_name "reddit"
+   - location / {
+       proxy_pass http://127.0.0.1:9292;
+     }
+  ```
+
+- Добавьте в конфигурацию Terraform открытие 80 порта для инстанса приложения. Для этого добавим к tags "http-server" в /terraform/stage/main.tf
+- Добавим вызов роли jdauphant.nginx в плейбук app.yml: { role: jdauphant.nginx }
+- Проверим работу приложения на 80 порту
+
+### Работа с Ansible Vault
+
+Для безопасной работы с приватными данными (пароли, приватные ключи и т.д.) используется механизм Ansible Vault.
+Данные сохраняются в зашифрованных файлах, которые при выполнении плейбука автоматически расшифровываются. Таким образом, приватные данные можно хранить в системе контроля версий.
+Для шифрования используется мастер-пароль (aka vault key). Его нужно передавать команде ansible-playbook при запуске, либо указать файл с ключом в ansible.cfg. Не допускается хранения этого ключ-файла в Git! Необходимо использовать для разных окружений разный vault key.
+
+Команды:
+
+```
+ansible-vault encrypt <file> - шифрование файла используя vault.key
+ansible-vault edit <file> - редактирование файла
+ansible-vault decrypt <file> - расшифровка файла
+```
+
+Задание со *
+Для использования динамического инвентори применяем gcp_compute.
+
+```
+ansible-playbook playbooks/site.yml - будет задействован динамический инвентори для stage окружения
+ansible-playbook -i environments/prod/inventory.gcp.yml playbooks/site.yml - будет задействован динамический инвентори для prod окружения
+```
+
 ## Деплой и управление конфигурацией с Ansible
 
 Чтобы не запушить в репу временные файлы Ansible, добавим в файл .gitignore следующую строку:
@@ -875,12 +996,14 @@ outputs.tf - определение выходных переменных
 
 - Добавление ssh ключа пользователя appuser1 в метаданные проекта:
 
- ```ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)}"
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)}"
  ```
 
 - Добавление ssh ключа пользователей appuser1 и appuser2 в метаданные проекта:
 
- ```ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)} appuser2:${file(var.public_key_path)}"
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)} appuser2:${file(var.public_key_path)}"
  ```
 
 - При попытке добавить ssh ключ пользователя appuser_web через веб интерфейс в метаданные проекта и выполнить terraform apply происходит удаление данного ssh ключа
