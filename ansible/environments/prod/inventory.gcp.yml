@@ -14,4 +14,4 @@ compose:
   internal_ip:  networkInterfaces[0].networkIP
 filters: []
 auth_kind: serviceaccount     
-service_account_file: /root/key.json
+service_account_file: ~/key.json
