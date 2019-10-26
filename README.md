@@ -1,6 +1,6 @@
 # kovtalex_infra
 
-kovtalex Infra repository
+[![Build Status](https://travis-ci.com/Otus-DevOps-2019-08/kovtalex_infra.svg?branch=master)](https://travis-ci.com/Otus-DevOps-2019-08/kovtalex_infra)
 
 ## Ansible: работа с ролями и окружениями
 
@@ -115,12 +115,85 @@ ansible-vault edit <file> - редактирование файла
 ansible-vault decrypt <file> - расшифровка файла
 ```
 
-Задание со *
+Задание со * - Динамический инвентори
 Для использования динамического инвентори применяем gcp_compute.
 
 ```
 ansible-playbook playbooks/site.yml - будет задействован динамический инвентори для stage окружения
 ansible-playbook -i environments/prod/inventory.gcp.yml playbooks/site.yml - будет задействован динамический инвентори для prod окружения
+```
+Задание с ** - Настройка Travis CI
+
+Было выполнено:
+- в .travis.yml дописаны команды установки terraform, packer, tflint, ansible-lint
+- для terraform init и подключению к GCS для state реализовано хранение access_token в шифрованной переменной Travis, добавляемой через web интерфейс Travis
+- в .travis.yml добавлена команда запуска скрипта (выполняется только для коммитов в master и PR) для:
+```
+packer validate для всех шаблонов
+terraform validate и tflint для окружений stage и prod
+ansible-lint для плейбуков Ansible
+```
+- в README.md добавлен бейдж с статусом билда
+- скрипт копирует .example-файлы в нормальные для проведения тестов
+
+Результат:
+```
+Packer
+Packer: packer/ubuntu16.json validated successfully
+Packer: packer/db.json validated successfully
+Packer: packer/immutable.json validated successfully
+Packer: packer/app.json validated successfully
+Ansible Lint
+Ansible Lint: ansible/playbooks/packer_app.yml validated successfully
+Ansible Lint: ansible/playbooks/packer_db.yml validated successfully
+Ansible Lint: ansible/playbooks/app.yml validated successfully
+Ansible Lint: ansible/playbooks/db.yml validated successfully
+Ansible Lint: ansible/playbooks/reddit_app_multiple_plays.yml validated successfully
+Ansible Lint: ansible/playbooks/site.yml validated successfully
+Ansible Lint: ansible/playbooks/users.yml validated successfully
+Ansible Lint: ansible/playbooks/deploy.yml validated successfully
+Ansible Lint: ansible/playbooks/reddit_app_one_play.yml validated successfully
+Ansible Lint: ansible/playbooks/clone.yml validated successfully
+Initializing modules...
+- app in ../modules/app
+- db in ../modules/db
+- vpc in ../modules/vpc
+Initializing the backend...
+Successfully configured the backend "gcs"! Terraform will automatically
+use this backend unless the backend configuration changes.
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "google" (hashicorp/google) 2.18.1...
+Terraform has been successfully initialized!
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Success! The configuration is valid.
+TFLint Stage
+TFLint: Stage env validated successfully
+Initializing modules...
+- app in ../modules/app
+- db in ../modules/db
+- vpc in ../modules/vpc
+Initializing the backend...
+Successfully configured the backend "gcs"! Terraform will automatically
+use this backend unless the backend configuration changes.
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "google" (hashicorp/google) 2.18.1...
+Terraform has been successfully initialized!
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Success! The configuration is valid.
+TFLint Prod
+TFLint: Prod env validated successfully
 ```
 
 ## Деплой и управление конфигурацией с Ansible
