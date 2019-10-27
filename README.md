@@ -1,6 +1,200 @@
 # kovtalex_infra
 
-kovtalex Infra repository
+[![Build Status](https://travis-ci.com/Otus-DevOps-2019-08/kovtalex_infra.svg?branch=master)](https://travis-ci.com/Otus-DevOps-2019-08/kovtalex_infra)
+
+## Ansible: работа с ролями и окружениями
+
+### Переносим созданные плейбуки в раздельные роли
+
+Роли представляют собой основной механизм группировки и переиспользования конфигурационного кода в Ansible. Роли позволяют сгруппировать в единое целое описание конфигурации отдельных сервисов и компонент системы (таски, хендлеры, файлы, шаблоны, переменные). Роли можно затем переиспользовать при настройке окружений, тем самым избежав дублирования кода. Ролями можно также делиться и брать у сообщества (community).
+в Ansible Galaxy.
+
+Ansible Galaxy - это централизованное место, где хранится информация о ролях, созданных сообществом (community roles).
+Ansible имеет специальную команду для работы с Galaxy. Получить справку по этой команде можно на сайте или использовав команду:
+
+```
+ansible-galaxy -h
+```
+Также команда ansible-galaxy init позволяет нам создать структуру роли в соответсвии с принятым на Galaxy форматом.
+
+```
+ansible-galaxy init app
+ansible-galaxy init db
+```
+
+Структура роли:
+
+```
+tree db
+db
+├── README.md
+├── defaults # <-- Директория для переменных по умолчанию
+│ └── main.yml
+├── handlers
+│ └── main.yml
+├── meta # <-- Информация о роли, создателе и зависимостях
+│ └── main.yml
+├── tasks # <-- Директория для тасков
+│ └── main.yml
+├── tests
+│ ├── inventory
+│ └── test.yml
+└── vars # <-- Директория для переменных, которые не должны
+└── main.yml # переопределяться пользователем
+6 directories, 8 files
+```
+
+Определим роли для базы данных, приложения и проведем их проверку:
+
+```
+ansible-playbook playbooks/site.yml --check
+ansible-playbook playbooks/site.yml
+```
+
+### Окружения
+
+Обычно инфраструктура состоит из нескольких окружений. Эти окружения могут иметь небольшие отличия в настройках инфраструктуры и конфигурации управляемых хостов.
+
+В директории ansible/environments создадим две директории для наших окружений stage и prod.
+
+Примеры деплоя из окружения:
+
+```
+ansible-playbook playbooks/site.yml (stage)
+ansible-playbook -i environments/prod/inventory playbooks/site.yml (prod)
+```
+
+### Работа с Community-ролями
+
+Используем роль jdauphant.nginx и настроим обратное проксирование для нашего приложения с помощью nginx.
+
+- Создадим файлы environments/stage/requirements.yml и environments/prod/requirements.yml
+- Добавим в них запись вида:
+  
+  ```
+  - src: jdauphant.nginx
+    version: v2.21.1
+  ```
+
+- Установим роль: ansible-galaxy install -r environments/stage/requirements.yml
+- Добавим в /roles/jdauphant.nginx/tasks/installation.packages.yml (иначе ругается на отсутствие python-get):
+
+```
+   - name: Install Python-apt
+     command: apt install python-apt
+```
+
+- Комьюнити-роли не стоит коммитить в свой репозиторий, для этого добавим в .gitignore запись: jdauphant.nginx
+- Добавим переменные в stage/group_vars/app и prod/group_vars/app:
+  
+  ```
+  nginx_sites:
+  default:
+   - listen 80
+   - server_name "reddit"
+   - location / {
+       proxy_pass http://127.0.0.1:9292;
+     }
+  ```
+
+- Добавьте в конфигурацию Terraform открытие 80 порта для инстанса приложения. Для этого добавим к tags "http-server" в /terraform/stage/main.tf
+- Добавим вызов роли jdauphant.nginx в плейбук app.yml: { role: jdauphant.nginx }
+- Проверим работу приложения на 80 порту
+
+### Работа с Ansible Vault
+
+Для безопасной работы с приватными данными (пароли, приватные ключи и т.д.) используется механизм Ansible Vault.
+Данные сохраняются в зашифрованных файлах, которые при выполнении плейбука автоматически расшифровываются. Таким образом, приватные данные можно хранить в системе контроля версий.
+Для шифрования используется мастер-пароль (aka vault key). Его нужно передавать команде ansible-playbook при запуске, либо указать файл с ключом в ansible.cfg. Не допускается хранения этого ключ-файла в Git! Необходимо использовать для разных окружений разный vault key.
+
+Команды:
+
+```
+ansible-vault encrypt <file> - шифрование файла используя vault.key
+ansible-vault edit <file> - редактирование файла
+ansible-vault decrypt <file> - расшифровка файла
+```
+
+Задание со * - Динамический инвентори
+Для использования динамического инвентори применяем gcp_compute.
+
+```
+ansible-playbook playbooks/site.yml - будет задействован динамический инвентори для stage окружения
+ansible-playbook -i environments/prod/inventory.gcp.yml playbooks/site.yml - будет задействован динамический инвентори для prod окружения
+```
+Задание с ** - Настройка Travis CI
+
+Было выполнено:
+- в .travis.yml дописаны команды установки terraform, packer, tflint, ansible-lint
+- для terraform init и подключению к GCS для state реализовано хранение access_token в шифрованной переменной Travis, добавляемой через web интерфейс Travis
+- в .travis.yml добавлена команда запуска скрипта (выполняется только для коммитов в master и PR) для:
+```
+packer validate для всех шаблонов
+terraform validate и tflint для окружений stage и prod
+ansible-lint для плейбуков Ansible
+```
+- в README.md добавлен бейдж с статусом билда
+- скрипт копирует .example-файлы в нормальные для проведения тестов
+
+Результат:
+```
+Packer
+Packer: packer/ubuntu16.json validated successfully
+Packer: packer/db.json validated successfully
+Packer: packer/immutable.json validated successfully
+Packer: packer/app.json validated successfully
+Ansible Lint
+Ansible Lint: ansible/playbooks/packer_app.yml validated successfully
+Ansible Lint: ansible/playbooks/packer_db.yml validated successfully
+Ansible Lint: ansible/playbooks/app.yml validated successfully
+Ansible Lint: ansible/playbooks/db.yml validated successfully
+Ansible Lint: ansible/playbooks/reddit_app_multiple_plays.yml validated successfully
+Ansible Lint: ansible/playbooks/site.yml validated successfully
+Ansible Lint: ansible/playbooks/users.yml validated successfully
+Ansible Lint: ansible/playbooks/deploy.yml validated successfully
+Ansible Lint: ansible/playbooks/reddit_app_one_play.yml validated successfully
+Ansible Lint: ansible/playbooks/clone.yml validated successfully
+Initializing modules...
+- app in ../modules/app
+- db in ../modules/db
+- vpc in ../modules/vpc
+Initializing the backend...
+Successfully configured the backend "gcs"! Terraform will automatically
+use this backend unless the backend configuration changes.
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "google" (hashicorp/google) 2.18.1...
+Terraform has been successfully initialized!
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Success! The configuration is valid.
+TFLint Stage
+TFLint: Stage env validated successfully
+Initializing modules...
+- app in ../modules/app
+- db in ../modules/db
+- vpc in ../modules/vpc
+Initializing the backend...
+Successfully configured the backend "gcs"! Terraform will automatically
+use this backend unless the backend configuration changes.
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "google" (hashicorp/google) 2.18.1...
+Terraform has been successfully initialized!
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Success! The configuration is valid.
+TFLint Prod
+TFLint: Prod env validated successfully
+```
 
 ## Деплой и управление конфигурацией с Ansible
 
@@ -875,12 +1069,14 @@ outputs.tf - определение выходных переменных
 
 - Добавление ssh ключа пользователя appuser1 в метаданные проекта:
 
- ```ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)}"
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)}"
  ```
 
 - Добавление ssh ключа пользователей appuser1 и appuser2 в метаданные проекта:
 
- ```ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)} appuser2:${file(var.public_key_path)}"
+ ```
+ ssh-keys = "appuser:${file(var.public_key_path)} appuser1:${file(var.public_key_path)} appuser2:${file(var.public_key_path)}"
  ```
 
 - При попытке добавить ssh ключ пользователя appuser_web через веб интерфейс в метаданные проекта и выполнить terraform apply происходит удаление данного ssh ключа
