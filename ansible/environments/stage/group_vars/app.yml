@@ -1,5 +1,6 @@
 ---
 db_host: "{{ hostvars['reddit-db'].internal_ip }}"
+deploy_user: appuser
 nginx_sites:
   default:
     - listen 80

@@ -2,20 +2,8 @@ dist: trusty
 sudo: required
 language: bash
 before_install:
-- mkdir -p ${HOME}/bin ; export PATH=${PATH}:${HOME}/bin
-- cd /tmp
-- sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157
-- sudo add-apt-repository ppa:jonathonf/python-2.7 -y
-- sudo apt-get update -y
-- sudo apt-get install python2.7 -y
-- sudo -H pip install ansible-lint ; ansible --version
-- curl --silent --output packer.zip https://releases.hashicorp.com/packer/1.4.4/packer_1.4.4_linux_amd64.zip ; unzip packer.zip ; rm -f packer.zip ; chmod +x packer ; mv packer ${HOME}/bin/ ; packer -v
-- curl --silent --output terraform.zip https://releases.hashicorp.com/terraform/0.12.12/terraform_0.12.12_linux_amd64.zip ; unzip terraform.zip ; rm -f terraform.zip ; chmod +x terraform ; mv terraform ${HOME}/bin/ ; terraform -v
-- curl -L "$(curl -s https://api.github.com/repos/wata727/tflint/releases/latest | grep -o -E "https://.+?_linux_amd64.zip")" > tflint.zip ; unzip tflint.zip ; rm tflint.zip ; chmod +x tflint ; mv tflint ${HOME}/bin/ ; tflint -v
-- cd ${TRAVIS_BUILD_DIR}
-- curl https://gist.githubusercontent.com/kovtalex/6bca8d3ea9368c0dbe8deb50b6f16e38/raw/3c1590f2a824208aae1af4846d9901073f31811f/travis.sh |
+- curl https://gist.githubusercontent.com/kovtalex/6bca8d3ea9368c0dbe8deb50b6f16e38/raw/6aa038009ff94017e19656e827905611960e529a/travis.sh |
   bash
-- cd ${TRAVIS_BUILD_DIR}
 - curl https://raw.githubusercontent.com/express42/otus-homeworks/2019-08/run.sh |
   bash
 notifications:

@@ -1,3 +1,5 @@
 ---
 - src: jdauphant.nginx
   version: v2.21.1
+- name: db
+  src: https://github.com/kovtalex/ansible-role-db
