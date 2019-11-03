@@ -2,12 +2,17 @@ language: python
 python:
 - '3.6'
 install:
-- pip install ansible>=2.8.6 molecule[gce] apache-libcloud
+- pip install ansible==2.8.6 molecule[gce] apache-libcloud
 script:
+- molecule --debug create
+- molecule --debug converge
+- molecule --debug verify
 - molecule --debug test
 after_script:
 - molecule --debug destroy
 env:
+  matrix:
+  - GCE_CREDENTIALS_FILE="$(pwd)/credentials.json"
   global:
   - secure: OiSLhYuU7d9DQlXNDSAU7Emw1/RD95IZ5Ztw+EDVBwgZeF+ZMCTVePMMtaQHqiraC4J7bztXziA1MOEiIoyUhq1yZqqQWDr6/VVSkQJs1aE8RqSExPc71p0TY0u/mXHiZERiYWemBvD1msZ8mqi7DOthXsaH2K27IqN3RHSI6A2lgxVYkL6VfvBirTebjEFV3qOZolOZHTdBBdN0kzC40vS8dxQUwxg29J6JiUfPA0yjZuD0gqPQq+S0RJNaVTkWI7TlTcMjevSB0KyW4x3NahA1sqHYzTmFA17a0jqM2Jek5vt0aA8dXCuKarXZCnJX1mNTLf1N0ab+tphtbAEJmfEXfojfgdFI7geNvZbVwGbeOKqLBssUUy0QrWVbic69Eu90Kh0bOERVPnGuGlNuqhFjjfb83jPj49LoKZYYCzKQapTpprvRpYZ+ebpilkhVsn4SDfa+lLlwKriWq0+7XJgOXPwkD3yBZvKRvEBBptGTKcGnZxX6MO+SMuQsL/NzFe7AK5fhwc5kj5K/97ysEx6iLwRrvnhm9GbRpI7dBaN034SK7VCY0YU0ZkbxKzw/ff3ekUNS8VCzIgtB4x+kqGEIMLMotG9fSB+gRsHG5imp4bsIOysV28ABmyLlZM9iPAvKEIuwQ7Sz6RzmYg8EJ4Oum+CkghP/UQSWfx+P/GM=
   - secure: 2t3x6AvHuESWvrrBmpvlWN+Bh21q/vagYTFkMclUpsbrOJXRGE501O9Av5NE/avJnP5pSt0QqqndB6/AhjfkZP8gchv8Wj4h9jKQeJkEGxXI+4v8LogsmBpnrji3ufpV5faSESBz+49115LaLd3HRT+ctzWdINEx3YfK65tBUDe0NQHEzCWSo6xXF+s1/wlflXFZFTfeELUUQoSwHEwhGsCurGWimwfSEmHOcmZ4EcThgceDL3Qw5wFnlziutd46F0k5oHy1C+ZBMO1oUCaGFzztO9/wcEmUGJv7j3LgDz6HBzWX2ypBSj37MaKlkYHzG9iuDsHMvxkB4S26THQH3jYaRSCwcykKcbmJf6uKXAgZT6Ei6msFa9/4dGApZm0uZm+gqcmnYC4HmNDvJAcpPx6z9Ca8EYC3FplVqHI4EDDYjz5d9wnIbPFbExzN3p7yOaTqRL4pMcp4cpp3bLffO3pJYloPuhFDDJvsDSeHCWCwbmzEaML0FYSVMB1XiX6yz6dBsiGJ0kZgj6BFG9zJUPZn3QJEZrHo5zmmcirvtSNCEgR/HR8RN82stBtsvpvXehwoQIlueRATdEvS3vd0OVY99YujPsRMZsBGwi1wOXY2nd5Q0tAIUHQxAByG2eoeMn2+IXJ7uR8UW5NroDVAEiUgARSlrAVzNa9ByK3vyRM=
@@ -15,3 +20,6 @@ env:
 before_install:
 - openssl aes-256-cbc -K $encrypted_b1f6b1eff77e_key -iv $encrypted_b1f6b1eff77e_iv
   -in secrets.tar.enc -out secrets.tar -d
+- tar xvf secrets.tar
+- mv google_compute_engine /home/travis/.ssh/
+- chmod 0600 /home/travis/.ssh/google_compute_engine
