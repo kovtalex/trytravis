@@ -126,7 +126,7 @@ ansible-playbook -i environments/prod/inventory.gcp.yml playbooks/site.yml - б�
 
 Было выполнено:
 - в .travis.yml дописаны команды установки terraform, packer, tflint, ansible-lint
-- для terraform init и подключению к GCS для state реализовано хранение access_token в шифрованной переменной Travis, добавляемой через web интерфейс Travis
+- для terraform init и подключению к GCS для state реализовано хранение access_token в шифрованной переменной Travis, добавляемой через web интерфейс Travis (gcloud auth application-default print-access-token)
 - в .travis.yml добавлена команда запуска скрипта (выполняется только для коммитов в master и PR) для:
 ```
 packer validate для всех шаблонов

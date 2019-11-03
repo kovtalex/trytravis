@@ -5,6 +5,7 @@
 .terraform/
 *.retry
 jdauphant.nginx
+ansible/roles/db/
 vault.key
 *.bak
 # Vagrant & molecule
