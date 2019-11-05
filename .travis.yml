@@ -1,9 +1,6 @@
 dist: trusty
 sudo: required
 language: bash
-env:
-  global:
-    secure: pL414D/QS1Cq7wLesDnPhjPUpMEijN9ia5u5cFdnTiatvoWbPCn+dQcCDi7ecbilpQ49BgbuoGFUZWsHHXagYRU5ojzqb+zYRv1kc9TuRo6t8hGHiDDnxWfWv8MjqcnphCPjjhbnLzArm0F4iXEqiHIZCKAD6sgGOgVaNFtxaM7RytHajuU+mK/TNa2ZF8e/Pm1zu7WZDPWUZ/Dsh+mj1OgxIt6TqCRnXduH7jjuX6svij2mxmZRY/LGSxCsLgA70sTw8zIF/7UzkAtPoBL8Q/VY8tCeUPECDglpfVO3g/mbc7IgNZoFIO1XKEj72FWJJBIKnVKYR3PbOL0d2/lTaQ4TjfYwOb9iM24du4vgEt2MsM/pWjQT1/Trs3YKFm0qKvhFJWv7dqb57TWOB9b7XNjnz8/7REPc4qiezWmPYjSMYfHTCmP5zmiFPtPHN7EXjaTQcCHpgF0aDE1+i/9Vy8hAFz3FRQcIdhDjZoZcn3HhU1D+MCPi8O5hEqua3HhoEyOmtCuKzfo7p0IAdLsmoQRpCmqitKuRW/VZkDyuzjP0sdRQYgi+9qVNZ+qL2tF6uH/Ded8d/Trr40KDd7WFY+JNbBQWg2vzOQunMJ0IDppWIEiq30455ggCRJepDlXkPteJULmFwKUElYU7+IIIur1mt51QeOpA1igOfDklxtw=
 before_install:
   - if [ ! "$TRAVIS_PULL_REQUEST" = "false" ]; then curl https://gist.githubusercontent.com/kovtalex/6bca8d3ea9368c0dbe8deb50b6f16e38/raw/6aa038009ff94017e19656e827905611960e529a/travis.sh | bash; fi
   - curl https://raw.githubusercontent.com/express42/otus-homeworks/2019-08/run.sh |
